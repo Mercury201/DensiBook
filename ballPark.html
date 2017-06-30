@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+    <head>
+<script>
+window.onload = function() {
+    pie();
+};
+ 
+function pie() {
+/* canvas要素 idで指定し、2Dコンテキストをゲット*/
+    var cnvs2 = document.getElementById('canvas2');
+    var ctx2 = cnvs2.getContext('2d');
+ 
+/* まずは扇形の基本 */
+    ctx2.beginPath();
+    /* 円弧の中心点をパスの始点にする */
+    ctx2.moveTo(600,450)
+    /* 円弧を指定。パスの始点から円弧の始点まで自動的にパスが引かれる */
+    ctx2.arc(600, 450, 400, 315 * Math.PI / 180, 225 * Math.PI / 180, true);
+    /* 円弧のパスを終わらせると、自動的に始点に線を引いてパスを閉じてくれる */
+    ctx2.closePath();
+    /* 色を指定して塗りつぶす */
+    ctx2.fillStyle = '#32dd32';
+    ctx2.fill();  
+    
+    ctx2.beginPath();
+    ctx2.moveTo(600,450)
+    ctx2.arc(600, 450, 280, 315 * Math.PI / 180, 225 * Math.PI / 180, true);
+    ctx2.closePath();
+    ctx2.fillStyle = '#8b4513';
+    ctx2.fill();  
+    
+    
+    
+    ctx2.clearRect(588, 330, 25, 6);
+    
+    //ctx2.clearRect(589, 427, 23, 23);
+    
+    ctx2.strokeRect(589, 427, 23, 23);
+    
+    ctx2.rotate( 45 * Math.PI / 180 );
+    
+    ctx2.fillRect(563, -286, 20, 20);
+    ctx2.fillStyle = '#8b4513';
+    ctx2.fill();  
+    
+    //ctx2.clearRect(563,-286, 20, 20);
+    ctx2.clearRect(723,-286, 20, 20);
+    ctx2.clearRect(563,-126, 20, 20);
+}
+</script>
+</head>
+ 
+<body>
+<canvas id="canvas2" width="1000" height="1000">
+<p>お使いのブラウザはcanvas要素に対応していないので描画できませんでした</p>
+</canvas>
+</body>
+</html>

@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="shortcut icon" href="../../user_guide/_images/images.jpg" />
+        <title>打席記録画面</title>
+        <!-- <link rel="stylesheet" href="Canvas.css" type="text/css"　media="all" /> -->
+        
+        <style type="text/css">
+            
+            label {
+               border: 1px solid #8080ff;  /* 枠線 */
+               border-radius: 9px;         /* 枠線の角丸 */
+               padding: 4px 6px 4px 4px;   /* 内側の余白 */
+               margin-bottom: 4px;         /* 外側の下の余白 */
+               display: inline-block;      /* 途中で改行させない */
+               cursor: pointer;            /* マウス形状を手形に */
+            }
+            /* ▼マウスが載ったときの追加装飾 */
+            label:hover {
+               background-color: blue;  /* 背景色 */
+               color: white;            /* 文字色 */
+            }
+            
+        </style>
+        
+        
+        <link rel="stylesheet" href="<?=base_url();?>css/bootstrap.min.css">
+        <link rel="stylesheet" href="<?=base_url();?>css/jquery-ui-bootstrap-masterbs3/css/custom-theme/jquery-ui-1.10.3.custom.css">
+        
+        
+        <script src="//code.jquery.com/jquery-1.10.2.js"></script>
+        <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+        <script src="<?=base_url();?>js/bootstrap.min.js"></script>
+        
+        
+        <script type="text/javascript">
+        
+        
+        /*どうやらこの書き方ではいけないらしい
+            $("#lowerright").button({
+               icons: {
+                   primary: 'ui-icon-arrowthick-1-se'
+               } 
+            });
+        */  
+          
+            
+            var pitchCanArray = new Array(10);//コースキャンバスを保存
+            var pitchNumArray = new Array();//投球配列
+            var cRunnerArray = new Array();//ランナーチェックボックス配列
+            var runnerArray = new Array();//ランナー配列
+            var flagArray = 0;//pitchArrayのフラグ
+            var pitchNum = 0;//球数
+            var countStrike = 0;//ストライクカウント
+            var countBall = 0;//ボールカウント
+            var flgGround = 0;//グラウンドキャンバスのフラグ
+            var typeOfPitchNo = 0;//球種No
+            var runnerflag = 0;//ランナーキャンバスフラグ
+            var firstRunner = false;//一塁走者(false:なし/true:あり)
+            var secondRunner = false;//二塁走者
+            var thirdRunner = false;//三塁走者
+            var mouseX;//マウスの絶対x座標
+            var mouseY;//マウスの絶対ｙ座標
+            var MouseX;//コースのx座標
+            var MouseY;//コースのy座標
+            var groundMouseX;//打球方向のx座標
+            var groundMouseY;//打球方向のy座標
+            var Canvas;
+            var groundCanvas;
+            var diamondCanvas;
+            var ctx;
+            var groundctx;
+            var diamondctx;
+            var firstRunnerctx;
+            var secondRunnerctx;
+            var img;//コース画像
+            var groundimg;//グラウンド画像
+            var diamondimg;//ダイヤモンド画像
+            var firstrunnerimg;//1塁ランナー画像
+            var secondrunnerimg;//2塁ランナー画像
+            var Thirdrunnerimg;//3塁ランナー画像
+            var decision;//判定(ボール、ストライク）
+            
+            //テスト用変数
+            var RunnerArray = [111,0,0];//playerNoを格納している
+            var testX;
+            var testY;
+            var testButNo;
+            var testDecidion;
+            var testArray = [
+                [1,2,3,4],
+                [5,6,7,8]
+                ];
+            var testMatchNo = 33;
+            
+            
+            ///////////////////////メインメソッド///////////////////////
+            window.onload = function(){
+                 
+                //確定ボタンを押せなくする
+                $('#confirm').attr('disabled',true);
+                //戻るボタンを押せなくする
+                $('#back').attr('disabled',true);
+                
+                //キャンバスの初期処理
+                drawCanvas();
+                drawgroundCanvas();
+                drawrunnerCanvas();
+                
+                //投球内容を描く
+                canvasdraw();
+                
+                //打球方向を書く
+                grounddraw();
+            };  
+            
+            //コースキャンバスを描く
+            function drawCanvas(){
+                
+                Canvas = document.getElementById('Canvas');
+                
+                //2dコンテキスト
+                ctx = Canvas.getContext('2d');
+                
+                //表示画像を指定
+                img = new Image();
+                img.src = "../../user_guide/_images/course_1.jpg";
+                
+                //画像の読み込み、表示
+                img.onload = function(){
+                    ctx.drawImage(img,0,0,350,350);
+                }
+                
+                //キャンバスの初期状態を保存
+                //pitchArray[flagArray] = ctx.getImageData(0, 0, Canvas.width, Canvas.height);
+            }
+            
+            //グラウンドキャンバスを描く
+            function drawgroundCanvas(){
+                
+                groundCanvas = document.getElementById('GroundCanvas');
+                
+                //2dコンテキスト
+                groundctx = groundCanvas.getContext('2d');
+                
+                //表示画像を指定
+                groundimg = new Image();
+                groundimg.src = "../../user_guide/_images/ground.jpg";
+                
+                //画像の読み込み、表示
+                groundimg.onload = function(){
+                    groundctx.drawImage(groundimg,0,0,400,400);
+                }
+            }
+            
+            //ダイヤモンドキャンバスを描く
+            function drawrunnerCanvas(){
+                
+                diamondCanvas = document.getElementById('diamondCanvas');
+                
+                //2dコンテキスト
+                diamondctx = diamondCanvas.getContext('2d');
+                
+                //表示画像を指定
+                diamondimg = new Image();
+                diamondimg.src = "../../user_guide/_images/diamond.jpg";
+                
+                //画像の読み込み、表示
+                diamondimg.onload = function(){
+                    diamondctx.drawImage(diamondimg,0,0,400,400);
+                }
+            }
+            
+            
+            ///////////////ランナーを描く///////////////
+            function drawRunner(){
+                
+                //1塁ランナー判定
+                if(RunnerArray[0] != 0){
+                    
+                    //表示画像を指定
+                    firstrunnerimg = new Image();
+                    firstrunnerimg.src = "../../user_guide/_images/runner.jpg";
+                        
+                    firstrunnerimg.onload = function(){
+                        diamondctx.drawImage(firstrunnerimg,290,190,40,40);
+                    }
+                    
+                    //ランナーのplayerNoを取得
+                    
+                    firstRunner = true;
+                }
+                
+                //2塁ランナー判定
+                if(RunnerArray[1] != 0){
+                    
+                    //表示画像を指定
+                    secondrunnerimg = new Image();
+                    secondrunnerimg.src = "../../user_guide/_images/runner.jpg";
+                        
+                    secondrunnerimg.onload = function(){
+                        diamondctx.drawImage(secondrunnerimg,172,60,40,40);
+                    }
+                    
+                    secondRunner = true;
+                }
+                
+                //3塁ランナー判定
+                if(RunnerArray[2] != 0){
+                    
+                    //表示画像を指定
+                    Thirdrunnerimg = new Image();
+                    Thirdrunnerimg.src = "../../user_guide/_images/runner.jpg";
+                        
+                    Thirdrunnerimg.onload = function(){
+                        diamondctx.drawImage(Thirdrunnerimg,100,100,40,40);
+                    }
+                    
+                    thirdRunner = true;
+                }
+            }
+            
+            //投球を記録する
+            function canvasdraw(){
+                
+                //mousedown event listener関数を設定
+                Canvas.onmousedown = mouseDownListener;
+                
+                function mouseDownListener(e){
+                    //座標調整
+                    adjustXY(e);
+                    
+                    //左ボタン
+                    if(typeOfPitchNo == 1){
+                        
+                        //左三角を描く
+                        ctx.beginPath();
+                        ctx.fillStyle = "#000000";
+                        ctx.moveTo(mouseX+10, mouseY-10);
+                        ctx.lineTo(mouseX+10, mouseY+10);
+                        ctx.lineTo(mouseX-10, mouseY);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+                    
+                    //ストレートボタン
+                    if(typeOfPitchNo == 2){
+                    
+                        //円を描く
+                        ctx.beginPath();
+                        ctx.fillStyle = "#000000";
+                        ctx.arc(mouseX, mouseY, 10, 0, Math.PI * 2, false);
+                        ctx.fill();
+                    
+                    }
+                    
+                    //右ボタン
+                    if(typeOfPitchNo == 3){
+                        
+                        //右三角を描く
+                        ctx.beginPath();
+                        ctx.fillStyle = "#000000";
+                        ctx.moveTo(mouseX-10, mouseY-10);
+                        ctx.lineTo(mouseX-10, mouseY+10);
+                        ctx.lineTo(mouseX+10, mouseY);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+                    
+                    //右下ボタン
+                    if(typeOfPitchNo == 4){
+                        
+                        //右下三角を描く
+                        ctx.beginPath();
+                        ctx.fillStyle = "#000000";
+                        ctx.moveTo(mouseX,mouseY-14);
+                        ctx.lineTo(mouseX+14,mouseY);
+                        ctx.lineTo(mouseX-7,mouseY+7);
+                        ctx.closePath();
+                        ctx.fill();
+                        
+                    }
+                    
+                    //下ボタン
+                    if(typeOfPitchNo == 5){
+                        
+                        //下三角を描く
+                        ctx.beginPath();
+                        ctx.fillStyle = "#000000";
+                        ctx.moveTo(mouseX-10,mouseY-10);
+                        ctx.lineTo(mouseX+10,mouseY-10);
+                        ctx.lineTo(mouseX,mouseY+10);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+                    
+                    //右下ボタン
+                    if(typeOfPitchNo == 6){
+                        
+                        //右下三角を描く
+                        ctx.beginPath();
+                        ctx.fillStyle = "#000000";
+                        ctx.moveTo(mouseX,mouseY-14);
+                        ctx.lineTo(mouseX-14,mouseY);
+                        ctx.lineTo(mouseX+7,mouseY+7);
+                        ctx.closePath();
+                        ctx.fill();
+                        
+                    }
+                    
+                    if(typeOfPitchNo != 0){
+                        
+                        MouseX = mouseX;
+                        MouseY = mouseY;
+                        
+                        //コース座標の描画
+                        console.log("X座標：" + MouseX);
+                        console.log("Y座標：" + MouseY);
+                        
+                        //キャンバスの情報を保存
+                        saveImageDate();
+                    
+                        //戻る、確定ボタンON
+                        $('#back').attr('disabled',false);
+                        $('#confirm').attr('disabled',false);
+                      
+                        //球種ボタン,キャンバスoff
+                        $('#left').attr('disabled',true);
+                        $('#straight').attr('disabled',true);
+                        $('#right').attr('disabled',true);
+                        $('#lowerleft').attr('disabled',true);
+                        $('#lower').attr('disabled',true);
+                        $('#lowerright').attr('disabled',true);
+                        $('#Canvas').attr('disabled',true);
+                    }
+                }
+            }
+            
+            //キャンバスの状態を保存する
+            function saveImageDate(){
+                ++flagArray;
+                //配列に投球格納
+                pitchCanArray[flagArray] = ctx.getImageData(0, 0, Canvas.width, Canvas.height);
+            }
+            
+            //打球方向を書く
+            function grounddraw(){
+                
+                    groundCanvas.onmousedown = mouseDownListener;
+                    function mouseDownListener(e){
+                    
+                        //座標調整
+                        adjustXY(e);
+                    
+                    if(flgGround == 0){
+                        
+                        //打球方向を書く
+                        groundctx.beginPath();
+                        groundctx.fillStyle = "#000000";
+                        groundctx.moveTo(197,354);
+                        groundctx.lineTo(mouseX,mouseY);
+                        groundctx.closePath();
+                        groundctx.stroke();
+                        
+                        flgGround = 1;
+                    }
+                }
+            }
+            
+            
+            
+            //マウスの絶対座標位置を取得
+            function adjustXY(e){
+                var rect = e.target.getBoundingClientRect();
+                mouseX = e.clientX - rect.left;
+                mouseY = e.clientY - rect.top;
+            }
+            
+            //投球を確定する
+            function pushConfirm(){
+                
+                //コース、球種の記録を格納する
+                if(document.countform.rStrike.checked
+                     || document.countform.rBall.checked){
+                    
+                    judgment();
+                }else{
+                    //打球方向、打席結果の記録に移る
+                    alert("打球方向を記録しますか？");
+                }
+                
+                //戻る、確定ボタンON
+                    $('#back').attr('disabled',true);
+                    $('#confirm').attr('disabled',true);
+                      
+                    //球種ボタン,キャンバスoff
+                    $('#left').attr('disabled',false);
+                    $('#straight').attr('disabled',false);
+                    $('#right').attr('disabled',false);
+                    $('#lowerleft').attr('disabled',false);
+                    $('#lower').attr('disabled',false);
+                    $('#lowerright').attr('disabled',false);
+                    $('#Canvas').attr('disabled',false);
+            }
+            
+            //ストライク、ボールの判定、投球記録
+            function judgment(){
+                
+                decision = $("[name=selectCount]:checked").val();
+                
+                //配列の初期化
+                pitchNumArray[pitchNum] = new Array();
+                
+                //投球情報格納
+                pitchNumArray[pitchNum][0] = MouseX;
+                pitchNumArray[pitchNum][1] = MouseY;
+                pitchNumArray[pitchNum][2] = decision;
+                pitchNumArray[pitchNum][3] = typeOfPitchNo;
+                ++pitchNum;
+                
+                alert("確定しました");
+                    
+                $("input[name=selectCount]").attr("checked",false);
+                
+                //ストレイク、ボールカウント計算
+                if(decision == "strike"){
+                    ++countStrike;
+                    alert(countStrike);
+                }else{
+                    ++countBall;
+                    alert(countBall);
+                }
+            }
+            
+            //押されたボタン取得
+            function pushLeft(){
+                typeOfPitchNo = 1;
+            }
+            
+            function pushStraight(){
+                typeOfPitchNo = 2;
+            }
+            
+            function pushRight(){
+                typeOfPitchNo = 3;
+            }
+            
+            function pushLowerLeft(){
+                typeOfPitchNo = 4;
+            }
+            
+            function pushLower(){
+                typeOfPitchNo = 5;
+            }
+            
+            function pushLowerRight(){
+                typeOfPitchNo = 6;
+            }
+            
+            //戻るボタン
+            function back(){
+                
+                --flagArray;
+                ctx.putImageData(pitchCanArray[flagArray], 0, 0);
+                drawCanvas();
+                $('#back').attr('disabled',true);
+            }
+            
+            //投球内容、打席結果を格納する
+            function submitAtbatResult(){
+                
+                //球数
+                $(':hidden[name="pitchNum"]').val(pitchNum);
+                //試合No
+                $(':hidden[name="matchNo"]').val(testMatchNo);
+                //状況No
+                $(':hidden[name="situationNo"]').val(1);
+                //投球内容（配列）
+                $(':hidden[name="array"]').val(pitchNumArray);
+            }
+            
+            /////////////////////////走者状況更新/////////////////////////////
+            function advanceConfirm(){
+                
+                //進路ラジオボタンが押されているか
+                if(document.formAdvance.steal.checked || 
+                    document.formAdvance.error.checked ||
+                    document.formAdvance.balk.checked ){
+                    //3塁ランナー
+                    if($("[name=cThirdRunner]").prop("checked") && thirdRunner){
+                    
+                        
+                    }
+                
+                    //2塁ランナー
+                    if($("[name=cSecondRunner]").prop("checked") && secondRunner){
+                    
+                        
+                    }
+                
+                    //1塁ランナー
+                    if($("[name=cFirstRunner]").prop("checked") && firstRunner){
+                        
+                        //一塁ランナーの情報、状況を更新する
+                        RunnerArray[1] = RunnerArray[0];
+                        RunnerArray[0] = 0;
+                        firstRunner = false;
+                    }
+                }else if(document.formAdvance.outSteal.checked ||
+                        document.formAdvance.pickOff.checked){
+                            
+                    //盗塁死、牽制死の場合
+                    alert("盗塁、牽制死の場合");
+                    
+                            
+                }else{
+                    alert("進塁項目を選択して下さい！");
+                }
+                
+                drawRunner();
+            }
+        
+        //////////////投球、打撃、走者(進塁)の情報が取れているか確認////////////
+        
+        function testDataGet(){
+            alert(pitchNumArray[0][2]);
+        }
+        
+	</script>
+
+</head>
+<body>
+    
+    <div id="header" class="container-fluid bg-primary">
+        <h4>1番 <?php echo "Takuma";?></h4>
+    </div>
+
+    <div id="row" class="container-fluid">
+        <div id="left" class="col-sm-6 bg-danger">
+            <div class="col-sm-offset-4 col-sm-4 col-sm-offset-4 bg-success">
+                
+                https://jquery-ui-bootstrap.github.io/jquery-ui-bootstrap/components.html#block-icons
+                
+                <!-- ツールバー風のボタン作成 -->
+                <div id="direction" class="btn-group">
+                    <button id="left" class="btn btn-primary" onclick="pushLeft()">
+                        <i class="glyphicon glyphicon-triangle-left"></i>
+                    </button>
+                    <button id="straight" class="btn btn-primary" onclick="pushStraight()">
+                        <i class="glyphicon glyphicon-triangle-left"></i>
+                    </button>
+                    <button id="right" class="btn btn-primary" onclick="pushRight()">
+                        <i class="glyphicon glyphicon-triangle-right"></i>
+                    </button>
+                    <br>
+                    <button id="lowerleft" class="btn btn-primary" onclick="pushLowerLeft()">
+                        <i class="glyphicon glyphicon-triangle-left"></i>
+                    </button>
+                    <button id="lower" class="btn btn-primary" onclick="pushLower()">
+                        <i class="glyphicon glyphicon-triangle-left"></i>
+                    </button>
+                    <button id="lowerright" class="btn btn-primary" onclick="pushLowerRight()">
+                        <i class="ui-icon ui-icon-carat-1-n"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="col-sm-12 bg-primary">
+                <h1></h1>
+            </div>
+            
+            <div class="col-sm-offset-2 col-sm-8 col-sm-offset-2 bg-warning">
+            <canvas id="Canvas" width="350" height="350" style="background-color: red;"></canvas>
+            </div>
+            
+            <div class="col-sm-3 bg-primary">
+                <button id="back" class="btn btn-primary" onclick="">戻る</button>
+            </div>
+            
+            <div class="col-sm-5 bg-success">
+                <form name="countform">
+                    <input type="radio" id="rStrike" name="selectCount" id="strikeCount" value="1">
+                    <label for="rStrike">ストライク</label>
+                    <input type="radio" id="rBall" name="selectCount" id="ballCount" value="2">
+                    <label for="rBall">ボール</label>
+                </form>    
+            </div>
+            
+            <div class="col-sm-4 bg-warning">
+                <button id="confirm" class="btn btn-primary" onclick="pushConfirm()">投球確定</button>
+                <button id="record" class="btn btn-primary" onclick="testDataGet()">データ確認</button>
+            </div>
+        </div>
+    
+        <div id="right" class="col-sm-6 bg-success">
+                <ul class="nav nav-tabs">
+                  <li class="active"><a href="#home" data-toggle="tab">打席状況</a></li>
+                  <li><a href="#second" data-toggle="tab" onclick="drawRunner()">走者状況</a></li>
+                </ul>
+                
+                <div class="tab-content">
+                <div class="tab-pane active" id="home">
+			        
+                        <canvas id="GroundCanvas" width="400" height="400" style="background-color: blue;"></canvas>
+            
+                        <form name="input_form" action="<?php echo site_url('/TestTakuma/atbatResult'); ?>" method="post">
+                            <select name="atbatresult" id="atbatResult" class="form-control" style="width: 150px;">
+                                <option value="見逃し三振">見逃し三振</option>
+                                <option value="空振り三振">空振り三振</option>
+                                <option value="一ゴロ">一ゴロ</option>
+                                <option value="二ゴロ">二ゴロ</option>
+                                <option value="三ゴロ">三ゴロ</option>
+                                <option value="遊ゴロ">遊ゴロ</option>
+                                <option value="投ゴロ">投ゴロ</option>
+                                <option value="捕ゴロ">捕ゴロ</option>
+                                <option value="四球">四球</option>
+                                <option value="死球">死球</option>
+                                <option value="左安打">左安打</option>
+                                <option value="右安打">右安打</option>
+                                <option value="中安打">中安打</option>
+                                <option value="左中２安打">左中２安打</option>
+                                <option value="右中２安打">右中２安打</option>
+                            </select>
+                            
+                            <select name="rbi" class="form-control" value="打点" style="width: 100px;">
+                                <option value="0"　checked>0</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                            </select>
+                            
+                            <select name="score" class="form-control" value="得点" style="width: 100px;">
+                                <option value="0">0</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                            </select>
+                    
+                            <!-- 球数,試合No,状況No -->
+                            <input type="hidden" name="pitchNum" value="" />
+                            <input type="hidden" name="matchNo" value=""/>
+                            <input type="hidden" name="situationNo" value=""/>
+                            <!-- 投球内容 -->
+                            <input type="hidden" name="array" value="" />
+                     
+                            <input type="submit" id="nextbutter" class="btn btn-primary" value="打席確定" onclick="submitAtbatResult()">
+                        </form>
+                </div>
+                
+                <div class="tab-pane" id="second">
+                    <div class="center-block">
+                        <div>
+                            
+                            <input type="checkbox" id="cFirstRun" name="cFirstRunner" value="1r">1塁ランナー
+                            <input type="checkbox" id="cSecondRun" name="cSecondRunner" value="2r">2塁ランナー
+                            <input type="checkbox" id="cThirdRun" name="cThirdRunner" value="3r">3塁ランナー
+                            
+                            <canvas id="diamondCanvas" width="400" height="400" style="background-color: green;"></canvas>
+                            
+                            <div id="right" class="col-sm-10 col-sm-offset-1 bg-success">
+                                
+                                <form name="formAdvance">
+                                    <input type="radio" name="advance" id="steal" value="盗塁">盗塁
+                                    <input type="radio" name="advance" id="error" value="エラー">エラー
+                                    <input type="radio" name="advance" id="balk" value="ボーク">ボーク
+                                    <input type="radio" name="advance" id="outSteal" value="盗塁死">盗塁死 
+                                    <input type="radio" name="advance" id="pickOff" value="牽制死">牽制死
+                                </form>
+                            
+                                <button id="confirm" class="btn btn-primary" onclick="advanceConfirm()">走塁状況確定</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+		</div>
+    </div>
+</body>
+</html>

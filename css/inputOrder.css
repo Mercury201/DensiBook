@@ -1,0 +1,30 @@
+.frame{
+    border : 0;
+    /*cellpadding : 5;*/
+    /*cellspacing : 0;*/
+    
+}
+
+.orderFrame{
+    border : 0;
+    vertical-align: top;
+    /*cellpadding : 5;*/
+    /*cellspacing : 0;*/
+}
+
+.order{
+    /*border : 1;*/
+    border: 2px solid;
+}
+
+td, th {
+    border: 1px solid;
+    height: 50px;
+    
+    
+}
+
+enptyItem {
+    height:50px;
+    width:100%;
+}

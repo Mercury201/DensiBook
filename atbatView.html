@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>打席記録画面</title>
+        <!-- <link rel="stylesheet" href="Canvas.css" type="text/css"　media="all" /> -->
+        
+        <style type="text/css">
+            #direction{
+                position: absolute;
+                top: 60px;
+                left: 265px;
+                width: 143px;
+            }
+
+            #backbutton{
+                position: absolute;
+                top: 180px;
+                left: 550px;
+                width: 30px;
+            }
+
+            #footer{
+                position: absolute;
+                top: 600px;
+                left: 150px;
+                width: 400px;
+                text-align: right;
+            }
+
+            #footer2{
+                position: absolute;
+                top: 600px;
+                left: 700px;
+                width: 300px;
+            }
+
+            select{
+                width: 100px;
+            }
+        </style>
+        
+        <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+        
+        <script src="//code.jquery.com/jquery-1.10.2.js"></script>
+        <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+        
+        <script type="text/javascript">
+            $(function() {
+                //button／buttonsetメソッドでボタンに整形
+                $('button').button();
+                $('input[type="button"]').button();
+                $('input[type="submit"]').button();
+                $('a').button();
+                $('input.only').button();
+                $('.group').buttonset();
+            });
+            
+            //アイコンボタンの作成
+            $(function() {
+                $('button.left').button({
+                    icons: {
+                        primary: 'ui-icon-arrowthick-1-w'
+                    },
+                    text: false
+                });
+                
+                $('button.straight').button({
+                    icons: {
+                        primary: 'ui-icon-bullet'
+                    },
+                    text: false
+                });
+                
+                $('button.light').button({
+                    icons: {
+                        primary: 'ui-icon-arrowthick-1-e'
+                    },
+                    text: false
+                });
+                
+                $('button.lowerleft').button({
+                    icons: {
+                        primary: 'ui-icon-arrowthick-1-sw'
+                    },
+                    text: false
+                });
+                
+                $('button.lower').button({
+                    icons: {
+                        primary: 'ui-icon-arrowthick-1-s'
+                    },
+                    text: false
+                });
+                
+                $('button.lowerlight').button({
+                    icons: {
+                        primary: 'ui-icon-arrowthick-1-se'
+                    },
+                    text: false
+                });
+
+            });
+            
+        </script>
+        
+    </head>
+    <body>
+            <canvas id="CourseCanvas" width="350" height="350" style="background-color: red; z-index: 0;">
+            </canvas>
+            <canvas id="GroundCanvas" width="400" height="400" style="background-color: blue; z-index: 1;">
+            </canvas>
+            
+            <!-- ツールバー風のボタン作成 -->
+            <div id="direction" class="ui-widget-header ui-corner-all" style="padding: 10px; background-color:red;">
+              <button id="left" class="left">Left</button>
+              <button id="straight" class="straight">Straight</button>
+              <button id="light" class="light">Light</button>
+              <button id="lowerleft" class="lowerleft">Lowerleft</button>
+              <button id="lower" class="lower">Lower</button>
+              <button id="lowerlight" class="lowerlight">Lowerlight</button>
+            </div>
+            
+            <div id="backbutton">
+                <button id="back" class="back">戻る</button>
+                <button id="forword" class="forword">進む</button>
+            </div>
+            
+            <div id="footer">
+                <input type="radio" name="selectCount" id="strikeCount" value="strike">ストライク
+                <input type="radio" name="selectCount" id="ballCount" value="ball">ボール
+                <button id="confirm" class="confirm">投球確定</button>
+            </div>
+            
+            <div id="footer2">
+                <select id="atbatResult">
+                    <option value="見逃し三振">見逃し三振</option>
+                    <option value="空振り三振">空振り三振</option>
+                    <option value="一ゴロ">一ゴロ</option>
+                    <option value="二ゴロ">二ゴロ</option>
+                    <option value="三ゴロ">三ゴロ</option>
+                    <option value="遊ゴロ">遊ゴロ</option>
+                    <option value="投ゴロ">投ゴロ</option>
+                    <option value="捕ゴロ">捕ゴロ</option>
+                    <option value="四球">四球</option>
+                    <option value="死球">死球</option>
+                    <option value="左安打">左安打</option>
+                    <option value="右安打">右安打</option>
+                    <option value="中安打">中安打</option>
+                    <option value="左中２安打">左中２安打</option>
+                    <option value="右中２安打">右中２安打</option>
+                </select>
+                
+                <button id="testbutton" class="testbutton">確認ボタン</button>
+                <!-- <input type="submit" name="nextbut" id="nextbutter" value="打席確定"> -->
+            </div>
+            
+    <script type="text/javascript">
+            var pitchCanArray = new Array(10);//コースキャンバスを保存
+            var pitchNumArray = new Array();//投球配列
+            var flagArray = 0;//pitchArrayのフラグ
+            var pitchNum = 0;//球数
+            var mouseX;//マウスの絶対x座標
+            var mouseY;//マウスの絶対ｙ座標
+            var courseMouseX;//コースのx座標
+            var courseMouseY;//コースのy座標
+            var groundMouseX;//打球方向のx座標
+            var groundMouseY;//打球方向のy座標
+            var courseCanvas;
+            var groundCanvas;
+            var coursectx;
+            var groundctx;
+            var courseimg;//コース画像
+            var groundimg;//グラウンド画像
+            var buttonNo;//球種No
+            var decision;//判定(ボール、ストライク）
+            
+            //テスト用変数
+            var testX;
+            var testY;
+            var testButNo;
+            var testDecidion;
+            
+            
+            //メインメソッド
+            window.onload = function(){
+                 
+                //確定ボタンを押せなくする
+                $('#confirm').attr('disabled',true);
+                //戻るボタンを押せなくする
+                $('#back').attr('disabled',true);
+                
+                //キャンバスの初期処理
+                drawcourseCanvas();
+                drawgroundCanvas();
+                
+                //キャンバスに絵を描く
+                canvasdraw();
+                
+                //打球方向を書く
+                grounddraw();
+            };
+            
+            //コースキャンバスを描く
+            function drawcourseCanvas(){
+                
+                courseCanvas = document.getElementById('CourseCanvas');
+                courseCanvas.style.position = "absolute";
+                courseCanvas.style.left = "150px";
+                courseCanvas.style.top = "180px";
+                
+                //2dコンテキスト
+                coursectx = courseCanvas.getContext('2d');
+                
+                //表示画像を指定
+                courseimg = new Image();
+                courseimg.src = "../../user_guide/_images/course_1.jpg";
+                
+                //画像の読み込み、表示
+                courseimg.onload = function(){
+                    coursectx.drawImage(courseimg,0,0,350,350);
+                }
+                
+                //キャンバスの初期状態を保存
+                //pitchArray[flagArray] = coursectx.getImageData(0, 0, courseCanvas.width, courseCanvas.height);
+            }
+            
+            //グラウンドキャンバスを描く
+            function drawgroundCanvas(){
+                
+                groundCanvas = document.getElementById('GroundCanvas');
+                groundCanvas.style.position = "absolute";
+                groundCanvas.style.left = "750px";
+                groundCanvas.style.top = "180px";
+                
+                //2dコンテキスト
+                groundctx = groundCanvas.getContext('2d');
+                
+                //表示画像を指定
+                groundimg = new Image();
+                groundimg.src = "../../user_guide/_images/ground.jpg";
+                
+                //画像の読み込み、表示
+                groundimg.onload = function(){
+                    groundctx.drawImage(groundimg,0,0,400,400);
+                }
+            }
+            
+            //投球を記録する
+            function canvasdraw(){
+                
+                //mousedown event listener関数を設定
+                courseCanvas.onmousedown = mouseDownListener;
+                
+                function mouseDownListener(e){
+                    //座標調整
+                    adjustXY(e);
+                    
+                    //左ボタン
+                    if(buttonNo == 1){
+                        
+                        //左三角を描く
+                        coursectx.beginPath();
+                        coursectx.fillStyle = "#000000";
+                        coursectx.moveTo(mouseX+10, mouseY-10);
+                        coursectx.lineTo(mouseX+10, mouseY+10);
+                        coursectx.lineTo(mouseX-10, mouseY);
+                        coursectx.closePath();
+                        coursectx.fill();
+                    }
+                    
+                    //ストレートボタン
+                    if(buttonNo == 2){
+                    
+                        //円を描く
+                        coursectx.beginPath();
+                        coursectx.fillStyle = "#000000";
+                        coursectx.arc(mouseX, mouseY, 10, 0, Math.PI * 2, false);
+                        coursectx.fill();
+                    
+                    }
+                    
+                    //右ボタン
+                    if(buttonNo == 3){
+                        
+                        //右三角を描く
+                        coursectx.beginPath();
+                        coursectx.fillStyle = "#000000";
+                        coursectx.moveTo(mouseX-10, mouseY-10);
+                        coursectx.lineTo(mouseX-10, mouseY+10);
+                        coursectx.lineTo(mouseX+10, mouseY);
+                        coursectx.closePath();
+                        coursectx.fill();
+                    }
+                    
+                    //右下ボタン
+                    if(buttonNo == 4){
+                        
+                        //右下三角を描く
+                        coursectx.beginPath();
+                        coursectx.fillStyle = "#000000";
+                        coursectx.moveTo(mouseX,mouseY-14);
+                        coursectx.lineTo(mouseX+14,mouseY);
+                        coursectx.lineTo(mouseX-7,mouseY+7);
+                        coursectx.closePath();
+                        coursectx.fill();
+                        
+                    }
+                    
+                    //下ボタン
+                    if(buttonNo == 5){
+                        
+                        //下三角を描く
+                        coursectx.beginPath();
+                        coursectx.fillStyle = "#000000";
+                        coursectx.moveTo(mouseX-10,mouseY-10);
+                        coursectx.lineTo(mouseX+10,mouseY-10);
+                        coursectx.lineTo(mouseX,mouseY+10);
+                        coursectx.closePath();
+                        coursectx.fill();
+                    }
+                    
+                    //右下ボタン
+                    if(buttonNo == 6){
+                        
+                        //右下三角を描く
+                        coursectx.beginPath();
+                        coursectx.fillStyle = "#000000";
+                        coursectx.moveTo(mouseX,mouseY-14);
+                        coursectx.lineTo(mouseX-14,mouseY);
+                        coursectx.lineTo(mouseX+7,mouseY+7);
+                        coursectx.closePath();
+                        coursectx.fill();
+                        
+                    }
+                    
+                    if(buttonNo != 0){
+                        
+                        courseMouseX = mouseX;
+                        courseMouseY = mouseY;
+                        
+                        //コース座標の描画
+                        console.log("X座標：" + courseMouseX);
+                        console.log("Y座標：" + courseMouseY);
+                    }
+                    
+                    //キャンバスの情報を保存
+                    saveImageDate();
+                    
+                    //戻る、確定ボタンON
+                    $('#back').attr('disabled',false);
+                    $('#confirm').attr('disabled',false);
+                      
+                    //球種ボタン,キャンバスoff
+                    $('#left').attr('disabled',true);
+                    $('#straight').attr('disabled',true);
+                    $('#light').attr('disabled',true);
+                    $('#lowerleft').attr('disabled',true);
+                    $('#lower').attr('disabled',true);
+                    $('#lowerlight').attr('disabled',true);
+                    $('#CourseCanvas').attr('disabled',true);
+                    
+                }
+            }
+            
+            //キャンバスの状態を保存する
+            function saveImageDate(){
+                ++flagArray;
+                //配列に投球格納
+                pitchCanArray[flagArray] = coursectx.getImageData(0, 0, courseCanvas.width, courseCanvas.height);
+            }
+            
+            //グラウンドキャンバスに打球方向を書く
+            function grounddraw(){
+                
+                groundCanvas.onmousedown = mouseDownListener;
+                function mouseDownListener(e){
+                    
+                    //座標調整
+                    adjustXY(e);
+                    
+                    //打球方向を書く
+                    groundctx.beginPath();
+                    groundctx.fillStyle = "#000000";
+                    groundctx.moveTo(197,354);
+                    groundctx.lineTo(mouseX,mouseY);
+                    groundctx.closePath();
+                    groundctx.stroke();
+                    
+                }
+            }
+            
+            //マウスの絶対座標位置を取得
+            function adjustXY(e){
+                var rect = e.target.getBoundingClientRect();
+                mouseX = e.clientX - rect.left;
+                mouseY = e.clientY - rect.top;
+            }
+            
+            function pushConfirm(){
+                
+                alert("あああ");
+                //コース、球種の記録を格納する
+                if($("[name=selectCount]").prop("checked")){
+                    
+                    decision = $(["name=selectCount"]).val();
+                    
+                    ++pitchNum;
+                
+                    //配列の初期化
+                    pitchNumArray[pitchNum] = new Array();
+                
+                    //投球情報格納
+                    pitchNumArray[pitchNum][0] = courseMouseX;
+                    pitchNumArray[pitchNum][1] = courseMouseY;
+                    pitchNumArray[pitchNum][2] = decision;
+                    pitchCanArray[pitchNum][3] = buttonNo;
+                    
+                    alert("確定しました");
+                }else{
+                    //打球方向、打席結果の記録に移る
+                
+                    
+                }
+            }
+            
+            //押されたボタン取得
+            $('#left').click(function(e){
+                buttonNo = 1; 
+            });
+                
+            $('#straight').click(function(e){
+                buttonNo = 2;
+            });
+                
+            $('#light').click(function(e){
+                buttonNo = 3; 
+            });
+                
+            $('#lowerleft').click(function(e){
+                buttonNo = 4;
+            });
+                
+            $('#lower').click(function(e) {
+                buttonNo = 5;
+            });
+            
+            $('#lowerlight').click(function(e) {
+                buttonNo = 6;
+            });
+            
+            //戻るボタン
+            $('#back').click(function(e){
+                
+                --flagArray;
+                coursectx.putImageData(pitchCanArray[flagArray], 0, 0);
+                drawcourseCanvas();
+                $('#back').attr('disabled',true);
+            });
+            
+            $('#forword').click(function(e){
+                
+                ++flagArray;
+                coursectx.putImageData(pitchCanArray[flagArray],0 ,0);
+            });
+            
+            //投球確定ボタン
+            $('#confirm').click(function(e){
+                
+                pushConfirm();
+            });
+            
+            //打席確定ボタン
+            $('#nextbutter').click(function(e){
+                
+            });
+            
+            
+            //確認用テストボタン
+            $('#testbutton').click(function(e) {
+                
+                testButNo = pitchNumArray[0][3];
+                alert("球種： " + testButNo);
+            });
+            
+        </script> 
+    </body>
+</html>

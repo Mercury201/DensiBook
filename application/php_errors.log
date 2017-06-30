@@ -1,0 +1,3 @@
+[09-Dec-2015 02:11:58 UTC] PHP Fatal error:  Class 'CI_Controller' not found in /home/ubuntu/workspace/application/controllers/EntryMember.php on line 2
+[09-Dec-2015 02:11:58 UTC] PHP Stack trace:
+[09-Dec-2015 02:11:58 UTC] PHP   1. {main}() /home/ubuntu/workspace/application/controllers/EntryMember.php:0

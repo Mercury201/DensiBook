@@ -1,0 +1,32 @@
+#direction{
+    position: absolute;
+    top: 60px;
+    left: 265px;
+    width: 143px;
+}
+
+#backbutton{
+    position: absolute;
+    top: 180px;
+    left: 550px;
+    width: 30px;
+}
+
+#footer{
+    position: absolute;
+    top: 600px;
+    left: 150px;
+    width: 400px;
+    text-align: right;
+}
+
+#footer2{
+    position: absolute;
+    top: 600px;
+    left: 700px;
+    width: 100px;
+}
+
+select{
+    width: 100px;
+}
